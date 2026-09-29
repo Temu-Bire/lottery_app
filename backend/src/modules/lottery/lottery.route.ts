@@ -9,6 +9,8 @@ import { authenticate, requirePermission } from '../../middleware/auth.js';
 import { validateBody, validateQuery } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { SystemPermissions } from '../role/role.types.js';
+import { ticketController } from '../ticket/ticket.controller.js';
+import { purchaseTicketsSchema } from '../ticket/ticket.validation.js';
 
 const router = Router();
 
@@ -22,6 +24,14 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(lotteryController.getById),
+);
+
+// Ticket purchase under lottery
+router.post(
+  '/:id/tickets',
+  authenticate,
+  validateBody(purchaseTicketsSchema),
+  asyncHandler(ticketController.purchase),
 );
 
 // Management endpoints
