@@ -8,6 +8,9 @@ import { logger } from './utils/logger.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalRateLimiter } from './middleware/rateLimiter.js';
+import { authRouter } from './modules/auth/auth.route.js';
+import { userRouter } from './modules/user/user.route.js';
+import { userAdminRouter } from './modules/user/user.admin.route.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -43,6 +46,11 @@ export const createApp = (): Application => {
 
   app.get('/health', healthHandler);
   app.get(`${env.API_PREFIX}/health`, healthHandler);
+
+  // API v1 Routes
+  app.use(`${env.API_PREFIX}/auth`, authRouter);
+  app.use(`${env.API_PREFIX}/users`, userRouter);
+  app.use(`${env.API_PREFIX}/admin/users`, userAdminRouter);
 
   // 404 and Error handling
   app.use(notFoundHandler);
