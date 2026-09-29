@@ -5,6 +5,9 @@ import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 
+import { notFoundHandler } from './middleware/notFoundHandler.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
 export const createApp = (): Application => {
   const app: Application = express();
 
@@ -37,6 +40,10 @@ export const createApp = (): Application => {
 
   app.get('/health', healthHandler);
   app.get(`${env.API_PREFIX}/health`, healthHandler);
+
+  // 404 and Error handling
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 };
