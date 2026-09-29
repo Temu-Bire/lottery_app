@@ -367,7 +367,7 @@ export class AuthService {
     return { success: true };
   }
 
-  private async generateTokenPair(
+  public async generateTokenPair(
     userId: string,
     email: string,
     roles: SystemRole[],

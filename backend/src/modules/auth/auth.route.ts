@@ -8,12 +8,15 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  telegramAuthSchema,
 } from './auth.validation.js';
+import { telegramController } from '../telegram/telegram.controller.js';
 import { validateBody } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import {
   authRateLimiter,
   passwordResetRateLimiter,
+  telegramAuthRateLimiter,
 } from '../../middleware/rateLimiter.js';
 
 const router = Router();
@@ -69,6 +72,13 @@ router.post(
   passwordResetRateLimiter,
   validateBody(resetPasswordSchema),
   asyncHandler(authController.resetPassword),
+);
+
+router.post(
+  '/telegram',
+  telegramAuthRateLimiter,
+  validateBody(telegramAuthSchema),
+  asyncHandler(telegramController.login),
 );
 
 export const authRouter = router;
