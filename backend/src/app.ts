@@ -11,6 +11,7 @@ import { globalRateLimiter } from './middleware/rateLimiter.js';
 import { authRouter } from './modules/auth/auth.route.js';
 import { userRouter } from './modules/user/user.route.js';
 import { userAdminRouter } from './modules/user/user.admin.route.js';
+import { lotteryRouter } from './modules/lottery/lottery.route.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -51,6 +52,7 @@ export const createApp = (): Application => {
   app.use(`${env.API_PREFIX}/auth`, authRouter);
   app.use(`${env.API_PREFIX}/users`, userRouter);
   app.use(`${env.API_PREFIX}/admin/users`, userAdminRouter);
+  app.use(`${env.API_PREFIX}/lotteries`, lotteryRouter);
 
   // 404 and Error handling
   app.use(notFoundHandler);
