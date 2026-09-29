@@ -18,7 +18,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16).default('development-jwt-refresh-secret-minimum-16-chars'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  TELEGRAM_BOT_TOKEN: z.string().optional().default(''),
+  TELEGRAM_BOT_TOKEN: z.string().default('test_telegram_bot_token_secret_12345'),
 });
 
 const parseEnv = () => {
