@@ -8,6 +8,7 @@ export const redisConnection = {
   port: env.REDIS_PORT,
   password: env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: null,
+  enableOfflineQueue: false,
 };
 
 export const defaultJobOptions: JobsOptions = {
