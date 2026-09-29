@@ -20,6 +20,9 @@ import { paymentRouter } from './modules/payment/payment.route.js';
 import { withdrawalRouter } from './modules/withdrawal/withdrawal.route.js';
 import { withdrawalAdminRouter } from './modules/withdrawal/withdrawal.admin.route.js';
 import { notificationRouter } from './modules/notification/notification.route.js';
+import { adminRouter } from './modules/admin/admin.route.js';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument } from './config/swagger.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -56,10 +59,14 @@ export const createApp = (): Application => {
   app.get('/health', healthHandler);
   app.get(`${env.API_PREFIX}/health`, healthHandler);
 
+  // Swagger Documentation
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
   // API v1 Routes
   app.use(`${env.API_PREFIX}/auth`, authRouter);
   app.use(`${env.API_PREFIX}/users`, userRouter);
   app.use(`${env.API_PREFIX}/admin/users`, userAdminRouter);
+  app.use(`${env.API_PREFIX}/admin`, adminRouter);
   app.use(`${env.API_PREFIX}/lotteries`, lotteryRouter);
   app.use(`${env.API_PREFIX}/tickets`, ticketRouter);
   app.use(`${env.API_PREFIX}/draws`, drawRouter);
