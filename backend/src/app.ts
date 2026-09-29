@@ -17,6 +17,8 @@ import { drawRouter } from './modules/draw/draw.route.js';
 import { winnerRouter } from './modules/winner/winner.route.js';
 import { walletRouter } from './modules/wallet/wallet.route.js';
 import { paymentRouter } from './modules/payment/payment.route.js';
+import { withdrawalRouter } from './modules/withdrawal/withdrawal.route.js';
+import { withdrawalAdminRouter } from './modules/withdrawal/withdrawal.admin.route.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -63,6 +65,8 @@ export const createApp = (): Application => {
   app.use(`${env.API_PREFIX}/winners`, winnerRouter);
   app.use(`${env.API_PREFIX}/wallet`, walletRouter);
   app.use(`${env.API_PREFIX}/payments`, paymentRouter);
+  app.use(`${env.API_PREFIX}/withdrawals`, withdrawalRouter);
+  app.use(`${env.API_PREFIX}/admin/withdrawals`, withdrawalAdminRouter);
 
   // 404 and Error handling
   app.use(notFoundHandler);
