@@ -13,6 +13,8 @@ import { userRouter } from './modules/user/user.route.js';
 import { userAdminRouter } from './modules/user/user.admin.route.js';
 import { lotteryRouter } from './modules/lottery/lottery.route.js';
 import { ticketRouter } from './modules/ticket/ticket.route.js';
+import { drawRouter } from './modules/draw/draw.route.js';
+import { winnerRouter } from './modules/winner/winner.route.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -55,6 +57,8 @@ export const createApp = (): Application => {
   app.use(`${env.API_PREFIX}/admin/users`, userAdminRouter);
   app.use(`${env.API_PREFIX}/lotteries`, lotteryRouter);
   app.use(`${env.API_PREFIX}/tickets`, ticketRouter);
+  app.use(`${env.API_PREFIX}/draws`, drawRouter);
+  app.use(`${env.API_PREFIX}/winners`, winnerRouter);
 
   // 404 and Error handling
   app.use(notFoundHandler);
