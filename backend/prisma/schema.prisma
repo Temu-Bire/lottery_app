@@ -7,7 +7,566 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model HealthCheck {
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  PENDING_VERIFICATION
+}
+
+enum LotteryStatus {
+  DRAFT
+  SCHEDULED
+  OPEN
+  CLOSED
+  DRAWING
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketStatus {
+  ACTIVE
+  WON
+  LOST
+  CANCELLED
+  REFUNDED
+}
+
+enum DrawStatus {
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WinnerStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum PayoutStatus {
+  UNPAID
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum WalletOperation {
+  DEPOSIT
+  WITHDRAWAL
+  TICKET_PURCHASE
+  PRIZE
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  EMAIL
+  PUSH
+}
+
+enum NotificationEvent {
+  TICKET_PURCHASED
+  DRAW_REMINDER
+  DRAW_COMPLETED
+  WINNER
+  PAYMENT_COMPLETED
+  WITHDRAWAL_COMPLETED
+  SECURITY_ALERT
+}
+
+enum AuditAction {
+  REGISTER
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_RESET
+  EMAIL_VERIFIED
+  ROLE_CHANGED
+  USER_SUSPENDED
+  LOTTERY_CREATED
+  LOTTERY_UPDATED
+  LOTTERY_OPENED
+  LOTTERY_CLOSED
+  DRAW_STARTED
+  DRAW_COMPLETED
+  TICKET_PURCHASED
+  PAYMENT_CREATED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+  WITHDRAWAL_CREATED
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  SECURITY_EVENT
+}
+
+// ----------------------------------------------------
+// USER & IDENTITY
+// ----------------------------------------------------
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  phone         String?    @unique
+  passwordHash  String
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  firstName     String?
+  lastName      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  userRoles               UserRole[]
+  telegramAccounts        TelegramAccount[]
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  tickets                 Ticket[]
+  winners                 Winner[]
+  wallet                  Wallet?
+  payments                Payment[]
+  withdrawals             Withdrawal[]
+  notifications           Notification[]
+  auditLogs               AuditLog[]
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  module      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String
+  roleId     String
+  assignedBy String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model TelegramAccount {
+  id         String   @id @default(uuid())
+  userId     String
+  telegramId String   @unique
+  username   String?
+  firstName  String?
+  lastName   String?
+  photoUrl   String?
+  authDate   DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([telegramId])
+  @@index([userId])
+  @@map("telegram_accounts")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  tokenHash   String    @unique
+  family      String
+  isRevoked   Boolean   @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  replacedBy  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
   id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+// ----------------------------------------------------
+// LOTTERY & TICKETS
+// ----------------------------------------------------
+
+model Lottery {
+  id                String        @id @default(uuid())
+  name              String
+  slug              String        @unique
+  description       String?
+  ticketPrice       Decimal       @db.Decimal(12, 2)
+  currency          String        @default("USD")
+  maxTickets        Int?
+  totalTicketsSold  Int           @default(0)
+  salesStart        DateTime
+  salesEnd          DateTime
+  drawDate          DateTime
+  status            LotteryStatus @default(DRAFT)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  rules   LotteryRule?
+  tickets Ticket[]
+  draws   Draw[]
+  prizes  Prize[]
+
+  @@index([status])
+  @@index([salesStart, salesEnd])
+  @@index([drawDate])
+  @@map("lotteries")
+}
+
+model LotteryRule {
+  id                 String   @id @default(uuid())
+  lotteryId          String   @unique
+  minNumbers         Int      @default(6)
+  maxNumbers         Int      @default(6)
+  numberRangeMin     Int      @default(1)
+  numberRangeMax     Int      @default(49)
+  bonusNumbersCount  Int      @default(0)
+  bonusRangeMin      Int?
+  bonusRangeMax      Int?
+  allowsDuplicates   Boolean  @default(false)
+  termsAndConditions String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  lottery Lottery @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
+
+  @@map("lottery_rules")
+}
+
+model Ticket {
+  id                String       @id @default(uuid())
+  ticketNumber      String       @unique
+  lotteryId         String
+  userId            String
+  purchaseReference String       @unique
+  price             Decimal      @db.Decimal(12, 2)
+  selectedNumbers   Int[]
+  bonusNumbers      Int[]        @default([])
+  status            TicketStatus @default(ACTIVE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  lottery Lottery  @relation(fields: [lotteryId], references: [id], onDelete: Restrict)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  winners Winner[]
+
+  @@index([lotteryId])
+  @@index([userId])
+  @@index([ticketNumber])
+  @@index([status])
+  @@map("tickets")
+}
+
+model Draw {
+  id              String     @id @default(uuid())
+  lotteryId       String
+  drawNumber      Int
+  status          DrawStatus @default(SCHEDULED)
+  scheduledAt     DateTime
+  executedAt      DateTime?
+  seed            String?
+  randomnessProof String?    @db.Text
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  lottery        Lottery         @relation(fields: [lotteryId], references: [id], onDelete: Restrict)
+  winningNumbers WinningNumber[]
+  winners        Winner[]
+
+  @@unique([lotteryId, drawNumber])
+  @@index([lotteryId])
+  @@index([status])
+  @@map("draws")
+}
+
+model WinningNumber {
+  id           String   @id @default(uuid())
+  drawId       String
+  numbers      Int[]
+  bonusNumbers Int[]    @default([])
+  drawnAt      DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade)
+
+  @@index([drawId])
+  @@map("winning_numbers")
+}
+
+model Prize {
+  id          String   @id @default(uuid())
+  lotteryId   String
+  tier        Int
+  name        String
+  matchCount  Int
+  matchBonus  Boolean  @default(false)
+  prizeType   String   @default("FIXED") // FIXED or PERCENTAGE
+  amount      Decimal  @db.Decimal(14, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lottery Lottery  @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
+  winners Winner[]
+
+  @@index([lotteryId])
+  @@map("prizes")
+}
+
+model Winner {
+  id             String       @id @default(uuid())
+  drawId         String
+  ticketId       String
+  userId         String
+  prizeId        String
+  matchCount     Int
+  matchedBonus   Boolean      @default(false)
+  prizeAmount    Decimal      @db.Decimal(14, 2)
+  status         WinnerStatus @default(PENDING_VERIFICATION)
+  payoutStatus   PayoutStatus @default(UNPAID)
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  draw   Draw   @relation(fields: [drawId], references: [id], onDelete: Restrict)
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  prize  Prize  @relation(fields: [prizeId], references: [id], onDelete: Restrict)
+
+  @@index([drawId])
+  @@index([ticketId])
+  @@index([userId])
+  @@index([status])
+  @@index([payoutStatus])
+  @@map("winners")
+}
+
+// ----------------------------------------------------
+// WALLET, PAYMENTS & LEDGER
+// ----------------------------------------------------
+
+model Wallet {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  balance       Decimal  @default(0.00) @db.Decimal(14, 2)
+  lockedBalance Decimal  @default(0.00) @db.Decimal(14, 2)
+  currency      String   @default("USD")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id            String            @id @default(uuid())
+  walletId      String
+  referenceId   String            @unique
+  operation     WalletOperation
+  amount        Decimal           @db.Decimal(14, 2)
+  balanceBefore Decimal           @db.Decimal(14, 2)
+  balanceAfter  Decimal           @db.Decimal(14, 2)
+  status        TransactionStatus @default(COMPLETED)
+  description   String?
+  metadata      Json?
+  createdAt     DateTime          @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([walletId])
+  @@index([operation])
+  @@index([referenceId])
+  @@index([createdAt])
+  @@map("wallet_transactions")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  userId            String
+  provider          String
+  externalReference String        @unique
+  amount            Decimal       @db.Decimal(14, 2)
+  currency          String        @default("USD")
+  status            PaymentStatus @default(PENDING)
+  idempotencyKey    String        @unique
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([externalReference])
+  @@index([status])
+  @@map("payments")
+}
+
+model Withdrawal {
+  id                   String           @id @default(uuid())
+  userId               String
+  amount               Decimal          @db.Decimal(14, 2)
+  currency             String           @default("USD")
+  destinationType      String
+  destinationDetails   Json
+  status               WithdrawalStatus @default(PENDING)
+  reviewedBy           String?
+  reviewNote           String?
+  transactionReference String?          @unique
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+// ----------------------------------------------------
+// NOTIFICATIONS & AUDIT LOGS
+// ----------------------------------------------------
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  channel   NotificationChannel
+  event     NotificationEvent
+  title     String
+  message   String
+  metadata  Json?
+  isRead    Boolean             @default(false)
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  actor      String
+  action     AuditAction
+  resource   String
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
