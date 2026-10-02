@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "LottoWin Mobile",
+    "slug": "lottowin-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#020617"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lottery.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#020617"
+      },
+      "package": "com.lottery.mobile"
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:3000/api/v1"
+    }
+  }
+}
