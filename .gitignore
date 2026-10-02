@@ -5,6 +5,8 @@ node_modules/
 # Build artifacts
 dist/
 build/
+.expo/
+*.tsbuildinfo
 
 # Environment files
 .env
